@@ -11,3 +11,6 @@
 ***
 #### Monitor the training process
 * TrainMonitor
+***
+#### Image Augmentation
+* GridMask

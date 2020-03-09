@@ -8,7 +8,7 @@ class TrainingMonitor(BaseLogger):
         super().__init__()
         self.figPath = figPath
         self.jsonPath = jsonPath
-        self.startAt = self.startAt
+        self.startAt = startAt
     def on_train_begin(self, logs = {}):
         self.H = {}
         if self.jsonPath:

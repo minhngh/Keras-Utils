@@ -24,6 +24,7 @@ class GridMask(DualTransform):
     Reference:
     |  https://arxiv.org/abs/2001.04086
     |  https://github.com/akuxcw/GridMask
+    |  https://albumentations.readthedocs.io/en/latest/
     """
     def __init__(self, num_grid = 3, fill_value = 0, rotate = 0, mode = 0, always_apply = True, p = .5):
         super().__init__(always_apply, p)
@@ -43,7 +44,7 @@ class GridMask(DualTransform):
             n_masks = self.num_grid[1] - self.num_grid[0] + 1
             for n, n_g in enumerate(range(self.num_grid[0], self.num_grid[1] + 1)):
                 grid_h, grid_w = height / n_g, width / n_g
-                this_mask = np.ones((int((n_g + 1) * grid_h), int((n_g + 1) * grid_w)))
+                this_mask = np.ones((int((n_g + 1) * grid_h), int((n_g + 1) * grid_w)), dtype = np.uint8)
                 for i in range(n_g + 1):
                     for j in range(n_g + 1):
                         this_mask[
@@ -60,18 +61,26 @@ class GridMask(DualTransform):
                     self.masks.append(this_mask)
                     self.rand_h_max.append(grid_h)
                     self.rand_w_max.append(grid_w)
-    def apply(self, image, task, rand_h, rand_w, angle, **kwargs):
+    def apply(self, image, mask, rand_h, rand_w, angle, **kwargs):
         h, w = image.shape[:2]
         mask = F.rotate(mask, angle) if self.rotate[1] > 0 else mask
         mask = mask[..., np.newaxis] if image.ndim == 3 else mask
         image *= mask[rand_h : rand_h + h, rand_w : rand_w + w].astype(image.dtype)
         return image
     def get_params_dependent_on_targets(self, params):
+        """Return dict of dependent parameters of apply function to finish task.
+        Args:
+            params (dict): 
+                list of keys - list of targets_as_params
+                list of values - list of values 
+        Targets:
+            Dict
+        """
         img = params['image']
         height, width = img.shape[:2]
         self.init_masks(height, width)
         mid = np.random.randint(len(self.masks))
-        mask = self.mask[mid]
+        mask = self.masks[mid]
         rand_h = np.random.randint(self.rand_h_max[mid])
         rand_w = np.random.randint(self.rand_w_max[mid])
         angle = np.random.randint(self.rotate[0], self.rotate[1]) if self.rotate[1] > 0 else 0
@@ -85,4 +94,10 @@ class GridMask(DualTransform):
     def targets_as_params(self):
         return ['image']
     def get_transform_init_args_names(self):
+        """Return parameters of __init__ function.
+        Args:
+            No parameters - default
+        Targets:
+            list/tuple of parameters
+        """
         return ('num_grid', 'fill_value', 'rotate', 'mode')
